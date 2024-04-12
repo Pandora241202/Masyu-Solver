@@ -1,4 +1,4 @@
-import time
+from timeit import default_timer as timer
 import json
 from masyu import Masyu
 
@@ -32,11 +32,11 @@ def main():
         print("What: 2")
         option = input()
         if int(option) == 2:
-            start_time = time.time()
+            start = timer()
             puzzel.solveWithWhat()
             #with open("solution.txt", "a") as file:  
             #    file.write("--- %s seconds ---" % (time.time() - start_time))
-            print("--- %s seconds ---" % (time.time() - start_time))
+            print("--- %s seconds ---" % (timer() - start))
 
 if __name__ == "__main__":
     main()
