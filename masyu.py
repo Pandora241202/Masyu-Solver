@@ -1,0 +1,357 @@
+class Masyu:
+    WHITE = 1
+    BLACK = 0
+
+    def __init__(self, size: int, nodes: dict[tuple[int, int], int]):
+        self.size = size
+        self.nodes = nodes
+
+    def printState(self, ajdList: dict[tuple[int, int], list[tuple[int, int]]]):
+        i = 0
+        for i in range(self.size - 1):
+            j = 0
+            for j in range(self.size - 1):
+                if (i, j) in self.nodes:
+                    print("O" if self.nodes[(i,j)] == Masyu.WHITE else "@", end="")
+                else:
+                    print(".", end="")
+                if (i, j) in ajdList and (i, j+1) in ajdList[(i, j)]:
+                    print("----", end="")
+                else:
+                    print("    ", end="")
+            j = j+1
+            if (i, j) in self.nodes:
+                print("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
+            else:
+                print(".")
+            j = 0
+            for j in range(self.size):
+                if (i, j) in ajdList and (i+1, j) in ajdList[(i, j)]:
+                    print("|    ", end="")
+                else:
+                    print("     ", end="")
+            print("")
+        j = 0
+        i = i+1
+        for j in range(self.size - 1):
+            if (i, j) in self.nodes:
+                print("O" if self.nodes[(i,j)] == Masyu.WHITE else "@", end="")
+            else:
+                print(".", end="")
+            if (i, j) in ajdList and (i, j+1) in ajdList[(i, j)]:
+                print("----", end="")
+            else:
+                print("    ", end="")
+        j = j + 1
+        if (i, j) in self.nodes:
+            print("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
+        else:
+            print(".")
+            
+    def printStateToFile(self, ajdList: dict[tuple[int, int], list[tuple[int, int]]], fileName: str):
+        with open(fileName, "a") as f:
+            i = 0
+            for i in range(self.size - 1):
+                j = 0
+                for j in range(self.size - 1):
+                    if (i, j) in self.nodes:
+                        f.write("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
+                    else:
+                        f.write(".")
+                    if (i, j) in ajdList and (i, j+1) in ajdList[(i, j)]:
+                        f.write("----")
+                    else:
+                        f.write("    ")
+                j = j+1
+                if (i, j) in self.nodes:
+                    f.write("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
+                    f.write("\n")
+                else:
+                    f.write(".\n")
+                j = 0
+                for j in range(self.size):
+                    if (i, j) in ajdList and (i+1, j) in ajdList[(i, j)]:
+                        f.write("|    ")
+                    else:
+                        f.write("     ")
+                f.write("\n")
+            j = 0
+            i = i+1
+            for j in range(self.size - 1):
+                if (i, j) in self.nodes:
+                    f.write("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
+                else:
+                    f.write(".")
+                if (i, j) in ajdList and (i, j+1) in ajdList[(i, j)]:
+                    f.write("----")
+                else:
+                    f.write("    ")
+            j = j + 1
+            if (i, j) in self.nodes:
+                f.write("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
+                f.write("\n")
+            else:
+                f.write(".\n")
+            f.write("\n")
+
+    def isValidPos(self, pos: tuple[int, int]):
+        return pos[0] >= 0 and pos[0] < self.size and pos[1] >= 0 and pos[1] < self.size
+
+    def threePosStraight(self, pos1: tuple[int, int], midPos: tuple[int, int], pos2: tuple[int, int]):
+        return pos1[0] == 2*midPos[0] - pos2[0] and pos1[1] == 2*midPos[1] - pos2[1]
+
+    def connect2Pos(self, pos1: tuple[int, int], pos2: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
+        if pos1 not in ajdList: ajdList[pos1] = []
+        if pos2 not in ajdList: ajdList[pos2] = []
+        if pos2 not in ajdList[pos1]:
+            ajdList[pos1].append(pos2)
+            ajdList[pos2].append(pos1)
+
+    def delConnect2Pos(self, pos1: tuple[int, int], pos2: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
+        ajdList[pos1].remove(pos2)
+        if len(ajdList[pos1]) == 0:
+            ajdList.pop(pos1)
+        ajdList[pos2].remove(pos1)
+        if len(ajdList[pos2]) == 0:
+            ajdList.pop(pos2)
+
+    def checkLocalLoopFromConnect(self, pos1: tuple[int, int], pos2: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
+        prePos = pos2
+        curPos = ajdList[pos2][0]
+        count = 2 if pos1 in self.nodes and pos2 in self.nodes else (1 if pos1 in self.nodes or pos2 in self.nodes else 0)
+        while curPos != pos1:
+            if len(ajdList[curPos]) == 1: return False
+            if curPos in self.nodes:
+                count += 1
+            t = curPos
+            curPos = ajdList[curPos][0] if ajdList[curPos][0] != prePos else ajdList[curPos][1]
+            prePos = t
+        return count < len(self.nodes)
+
+    def isLegalConnect(self, pos: tuple[int, int], connectPos: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
+        if not self.isValidPos(connectPos):
+            return False
+
+        if ajdList[pos][0] in self.nodes:
+            # Line after black node must straight
+            if self.nodes[ajdList[pos][0]] == Masyu.BLACK and not self.threePosStraight(ajdList[pos][0], pos, connectPos):
+                return False
+            # Line after white node with straight light before must turn
+            if self.nodes[ajdList[pos][0]] == Masyu.WHITE:
+                if len(ajdList[pos][0]) == 1 or len(ajdList[ajdList[pos][0]]) == 1:
+                    return True
+                # 3 pos before white node
+                pos1 = ajdList[pos][0]
+                midPos = ajdList[pos1][0] if ajdList[pos1][0] != pos else ajdList[pos1][1]
+                pos2 = ajdList[midPos][0] if ajdList[pos1][0] != pos1 else ajdList[midPos][1]
+                if self.threePosStraight(pos1,midPos,pos2) and self.threePosStraight(ajdList[pos][0], pos, connectPos):
+                    return False
+
+        if connectPos not in ajdList:
+            if connectPos not in self.nodes:
+                return True
+            if self.nodes[connectPos] == Masyu.WHITE:
+                if ajdList[pos][0][0] != 2*pos[0]-connectPos[0] or ajdList[pos][0][1] != 2*pos[1]-connectPos[1]:
+                    return True
+                return (2*connectPos[0]-pos[0], 2*connectPos[1]-pos[1]) not in self.nodes or self.nodes[(2*connectPos[0]-pos[0], 2*connectPos[1]-pos[1])] == Masyu.BLACK
+            return connectPos[0] == 2*pos[0] - ajdList[pos][0][0] and connectPos[1] == 2*pos[1] - ajdList[pos][0][1]
+
+        if len(ajdList[connectPos]) > 1:
+            return False
+        if self.checkLocalLoopFromConnect(pos, connectPos, ajdList):
+            return False
+        if connectPos not in self.nodes:
+            return True
+        if self.nodes[connectPos] == Masyu.WHITE:
+            # Make a turn at white node
+            if pos[0] != 2*connectPos[0] - ajdList[connectPos][0][0] or pos[1] != 2*connectPos[1] - ajdList[connectPos][0][1]:
+                return False
+            # Turn at pos right before reach white node
+            if connectPos[0] != 2*pos[0] - ajdList[pos][0][0] or connectPos[1] != 2*pos[1] - ajdList[pos][0][1]:
+                return True
+            # Straight line before reach white node with 1 line after
+            if len(ajdList[ajdList[connectPos][0]]) == 1:
+                return True
+            # Straight line before reach white node with 2 lines after without turn
+            for p in ajdList[ajdList[connectPos][0]]:
+                if p != connectPos:
+                    # White node with 2 lines after without turn
+                    if connectPos[0] == 2*ajdList[connectPos][0][0] - p[0] and connectPos[1] == 2*ajdList[connectPos][0][1] - p[1]:
+                        return False
+                    # White node with turn right after
+                    return True
+        # Straight line pass black node
+        if pos[0] == 2*connectPos[0] - ajdList[connectPos][0][0] and pos[1] == 2*connectPos[1] - ajdList[connectPos][0][1]:
+            return False
+        # Straight line before black node and turn at black node
+        if connectPos[0] == 2*pos[0] - ajdList[pos][0][0] and connectPos[1] == 2*pos[1] - ajdList[pos][0][1]:
+            return True
+        # Turn right before reach black node
+        return False
+
+    def makeLegalConnectsFromConnectedPos(self, pos: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
+        # Node connect to pos always has higher priority in connectPos 
+        connectPos = []        
+        if pos in self.nodes:
+            if self.nodes[pos] == Masyu.WHITE:
+                return [(2*pos[0] - ajdList[pos][0][0], 2*pos[1] - ajdList[pos][0][1])] if self.isLegalConnect(pos, (2*pos[0] - ajdList[pos][0][0], 2*pos[1] - ajdList[pos][0][1]), ajdList) else []
+            else:
+                # Black node current connect to same row pos
+                if ajdList[pos][0][0] == pos[0]:
+                    if self.isLegalConnect(pos, (pos[0]+1, pos[1]), ajdList):
+                        connectPos = [(pos[0]+1, pos[1])] + connectPos if (pos[0]+1, pos[1]) in self.nodes else connectPos + [(pos[0]+1, pos[1])]
+                    if self.isLegalConnect(pos, (pos[0]-1, pos[1]), ajdList):
+                        connectPos = [(pos[0]-1, pos[1])] + connectPos if (pos[0]-1, pos[1]) in self.nodes else connectPos + [(pos[0]-1, pos[1])]
+                # Black node current connect to same col pos
+                else:
+                    if self.isLegalConnect(pos, (pos[0], pos[1]-1), ajdList):
+                        connectPos = [(pos[0], pos[1]-1)] + connectPos if (pos[0], pos[1]-1) in self.nodes else connectPos + [(pos[0], pos[1]-1)]
+                    if self.isLegalConnect(pos, (pos[0], pos[1]+1), ajdList):
+                        connectPos = [(pos[0], pos[1]+1)] + connectPos if (pos[0], pos[1]+1) in self.nodes else connectPos + [(pos[0], pos[1]+1)]
+        else:
+            if (pos[0], pos[1]-1) != ajdList[pos][0] and self.isLegalConnect(pos, (pos[0], pos[1]-1), ajdList):
+                connectPos = [(pos[0], pos[1]-1)] + connectPos if (pos[0], pos[1]-1) in self.nodes else connectPos + [(pos[0], pos[1]-1)]
+            if (pos[0], pos[1]+1) != ajdList[pos][0] and self.isLegalConnect(pos, (pos[0], pos[1]+1), ajdList):
+                connectPos = [(pos[0], pos[1]+1)] + connectPos if (pos[0], pos[1]+1) in self.nodes else connectPos + [(pos[0], pos[1]+1)]
+            if (pos[0]-1, pos[1]) != ajdList[pos][0] and self.isLegalConnect(pos, (pos[0]-1, pos[1]), ajdList):
+                connectPos = [(pos[0]-1, pos[1])] + connectPos if (pos[0]-1, pos[1]) in self.nodes else connectPos + [(pos[0]-1, pos[1])]
+            if (pos[0]+1, pos[1]) != ajdList[pos][0] and self.isLegalConnect(pos, (pos[0]+1, pos[1]), ajdList):
+                connectPos = [(pos[0]+1, pos[1])] + connectPos if (pos[0]+1, pos[1]) in self.nodes else connectPos + [(pos[0]+1, pos[1])]
+
+        return connectPos
+
+    def preprocessing(self, ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
+        for pos in self.nodes:
+            # For white nodes
+            if self.nodes[pos] == Masyu.WHITE:
+                # White node at edge
+                # Vertical
+                if pos[1] == 0 or pos[1] == self.size - 1:
+                    self.connect2Pos(pos, (pos[0]-1, pos[1]), ajdList)
+                    self.connect2Pos(pos, (pos[0]+1, pos[1]), ajdList)
+                # Horizontal
+                if pos[0] == 0 or pos[0] == self.size - 1:
+                    self.connect2Pos(pos, (pos[0], pos[1]-1), ajdList)
+                    self.connect2Pos(pos, (pos[0], pos[1]+1), ajdList)
+
+                # >=3 white node next to each other
+                # Horizontal
+                countContinuWhiteNodes = 1
+                while pos[1] + countContinuWhiteNodes < self.size:
+                    if (pos[0], pos[1] + countContinuWhiteNodes) not in self.nodes or self.nodes[(pos[0], pos[1] + countContinuWhiteNodes)] == Masyu.BLACK:
+                        break
+                    countContinuWhiteNodes += 1
+                if countContinuWhiteNodes >= 3:
+                    for i in range(countContinuWhiteNodes):
+                        self.connect2Pos((pos[0], pos[1]+i), (pos[0]-1, pos[1]+i), ajdList)
+                        self.connect2Pos((pos[0], pos[1]+i), (pos[0]+1, pos[1]+i), ajdList)
+                # Vertical
+                countContinuWhiteNodes = 1
+                while pos[0] + countContinuWhiteNodes < self.size:
+                    if (pos[0] + countContinuWhiteNodes, pos[1]) not in self.nodes or self.nodes[(pos[0] + countContinuWhiteNodes, pos[1])] == Masyu.BLACK:
+                        break
+                    countContinuWhiteNodes += 1
+                if countContinuWhiteNodes >= 3:
+                    for i in range(countContinuWhiteNodes):
+                        self.connect2Pos((pos[0]+i, pos[1]), (pos[0]+i, pos[1]-1), ajdList)
+                        self.connect2Pos((pos[0]+i, pos[1]), (pos[0]+i, pos[1]+1), ajdList)
+
+            # For black nodes
+            else:
+                # Black node at edge or distance to edge = 1
+                # Horizontal
+                if pos[1] == 0 or pos[1] == self.size - 1 or pos[1] == 1 or pos[1] == self.size - 2:
+                    connectPos = (pos[0], pos[1]+1 if pos[1] == 0 or pos[1] == 1 else pos[1]-1)
+                    self.connect2Pos(pos, connectPos, ajdList)
+                    self.connect2Pos(connectPos, (connectPos[0], connectPos[1]+1 if pos[1] == 0 or pos[1] == 1 else connectPos[1]-1), ajdList)
+                # Vertical
+                if pos[0] == 0 or pos[0] == self.size - 1 or pos[0] == 1 or pos[0] == self.size - 2:
+                    connectPos = (pos[0] + 1 if pos[0] == 0 or pos[0] == 1 else pos[0]-1, pos[1])
+                    self.connect2Pos(pos, connectPos, ajdList)
+                    self.connect2Pos(connectPos, (connectPos[0] + 1 if pos[0] == 0 or pos[0] == 1 else connectPos[0]-1, connectPos[1]), ajdList)
+
+                # 2 black nodes next to each other
+                # Horizontal
+                if (pos[0], pos[1]+1) in self.nodes and self.nodes[(pos[0], pos[1]+1)] == Masyu.BLACK:
+                    self.connect2Pos(pos, (pos[0], pos[1]-1), ajdList)
+                    self.connect2Pos((pos[0], pos[1]-1), (pos[0], pos[1]-2), ajdList)
+                    self.connect2Pos((pos[0], pos[1]+1), (pos[0], pos[1]+2), ajdList)
+                    self.connect2Pos((pos[0], pos[1]+2), (pos[0], pos[1]+3), ajdList)
+                # Vertical
+                if (pos[0]+1, pos[1]) in self.nodes and self.nodes[(pos[0]+1, pos[1])] == Masyu.BLACK:
+                    self.connect2Pos(pos, (pos[0]-1, pos[1]), ajdList)
+                    self.connect2Pos((pos[0]-1, pos[1]), (pos[0]-2, pos[1]), ajdList)
+                    self.connect2Pos((pos[0]+1, pos[1]), (pos[0]+2, pos[1]), ajdList)
+                    self.connect2Pos((pos[0]+2, pos[1]), (pos[0]+3, pos[1]), ajdList)
+
+        self.printStateToFile(ajdList, "solution.txt")
+
+    def isGoal(self, ajdList:dict[tuple[int, int], list[tuple[int,int]]]):
+        if len(ajdList) < len(self.nodes): return False
+
+        end = ()
+        for pos in self.nodes:
+            end = pos
+            if end not in ajdList:
+                return False
+            break
+
+        prePos = end
+        curPos = ajdList[end][0]
+        count = 1
+        while curPos != end:
+            if len(ajdList[curPos]) == 1:
+                return False
+            if curPos in self.nodes:
+
+                count += 1
+            t = curPos
+            curPos = ajdList[curPos][0] if ajdList[curPos][0] != prePos else ajdList[curPos][1]
+            prePos = t
+
+        return count == len(self.nodes)
+
+    def solve(self, ajdList:dict[tuple[int, int], list[tuple[int,int]]]):
+
+        self.printStateToFile(ajdList, "solution.txt")
+
+        if self.isGoal(ajdList):
+            return True
+
+        tryMoves = None
+        # Try to continue lines in current state
+        for pos in ajdList:
+            if len(ajdList[pos]) == 1:
+                legalMoves = self.makeLegalConnectsFromConnectedPos(pos, ajdList)
+                if len(legalMoves) == 0:
+                    return False
+                # Find pos with least options to be chosen
+                if not tryMoves:
+                    tryMoves = (pos, legalMoves)
+                else:
+                    if (len(legalMoves) < len(tryMoves[1])) or (len(legalMoves) == len(tryMoves[1]) and tryMoves[1][0] in self.nodes):
+                        tryMoves = (pos, legalMoves)
+
+        for pos in tryMoves[1]:
+            self.connect2Pos(tryMoves[0], pos, ajdList)
+            if self.solve(ajdList):
+                return True
+            self.delConnect2Pos(tryMoves[0], pos, ajdList)
+            self.printStateToFile(ajdList, "solution.txt")
+
+        return False
+
+    def solveWithWhat(self):
+        ajdList: dict[tuple[int, int], list[tuple[int,int]]] = {}
+
+        with open("solution.txt", "w") as file:
+            file.write("Puzzel:\n\n")
+        self.printStateToFile({}, "solution.txt")
+
+        with open("solution.txt", "a") as file:  
+            file.write("1. Preprocess\n\n")
+        self.preprocessing(ajdList)
+
+        with open("solution.txt", "a") as file:  
+            file.write("2. Try\n\n")
+        self.solve(ajdList)
