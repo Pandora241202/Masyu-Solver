@@ -140,6 +140,15 @@ class Masyu:
             prePos = t
         return count < len(self.nodes)
 
+    def check2StraightLinesAfterWhiteNodes(self, prePos: tuple[int, int], whitePos: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
+        if len(ajdList[whitePos]) < 2:
+            return False
+        midP = ajdList[whitePos][0] if not prePos or ajdList[whitePos][0] != prePos else ajdList[whitePos][1]
+        if len(ajdList[midP]) == 1:
+            return False
+        p2 = ajdList[midP][0] if ajdList[midP][0] != whitePos else ajdList[midP][1]
+        return self.threePosStraight(whitePos, midP, p2)
+        
     def isLegalConnect(self, pos: tuple[int, int], connectPos: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
         if not self.isValidPos(connectPos):
             return False
@@ -149,9 +158,28 @@ class Masyu:
 
         if pos not in ajdList:
         # And pos also is node
+            if connectPos not in ajdList: 
+                return True
             if self.nodes[pos] == Masyu.WHITE:
+                if connectPos not in self.nodes:
+                    if ajdList[connectPos][0] not in self.nodes:
+                        return True
+                    if self.nodes[ajdList[connectPos][0]] == Masyu.BLACK:
+                        return self.threePosStraight(pos, connectPos, ajdList[connectPos][0])
+                    if not self.threePosStraight(pos, connectPos, ajdList[connectPos][0]):
+                        return True
+                    return not self.check2StraightLinesAfterWhiteNodes(connectPos, ajdList[connectPos][0], ajdList)
+                if self.nodes[connectPos] == Masyu.WHITE:
+                    if not self.threePosStraight(pos, connectPos, ajdList[connectPos][0]):
+                        return False 
+                    return not self.check2StraightLinesAfterWhiteNodes(None, connectPos, ajdList)
+                return not self.threePosStraight(pos, connectPos, ajdList[connectPos][0])
+            if not self.threePosStraight(pos, connectPos, ajdList[connectPos][0]):
+                return False
+            if ajdList[connectPos][0] not in self.nodes or self.nodes[ajdList[connectPos][0]] == Masyu.BLACK:
+                return True
+            return not self.check2StraightLinesAfterWhiteNodes(connectPos, ajdList[connectPos][0], ajdList)
                 
-
         if ajdList[pos][0] in self.nodes:
             # Line after black node must straight
             if self.nodes[ajdList[pos][0]] == Masyu.BLACK and not self.threePosStraight(ajdList[pos][0], pos, connectPos):
@@ -216,7 +244,7 @@ class Masyu:
         connectPos = []        
         if pos in self.nodes:
             # Nodes with no connect at the moment
-            if len(ajdList[pos]) == 0:
+            if pos not in ajdList:
                 if self.nodes[pos] == Masyu.WHITE:
                     # White node can't make connection to 2 ajadent directions
                     if (not self.isLegalConnect(pos, self.getLeft(pos), ajdList) or not self.isLegalConnect(pos, self.getRight(pos), ajdList)) and (not self.isLegalConnect(pos, self.getTop(pos), ajdList) or not self.isLegalConnect(pos, self.getBot(pos), ajdList)):
@@ -226,7 +254,18 @@ class Masyu:
                     if not self.isLegalConnect(pos, self.getTop(pos), ajdList) or not self.isLegalConnect(pos, self.getBot(pos), ajdList):
                         return [self.getLeft(pos)]
                     return [self.getTop(pos), self.getLeft(pos)]
-                    
+                if (not self.isLegalConnect(pos, self.getLeft(pos), ajdList) and not self.isLegalConnect(pos, self.getRight(pos), ajdList)) or (not self.isLegalConnect(pos, self.getTop(pos), ajdList) and not self.isLegalConnect(pos, self.getBot(pos), ajdList)):
+                    return []
+                if not self.isLegalConnect(pos, self.getBot(pos), ajdList):
+                    return [self.getTop(pos)]
+                if not self.isLegalConnect(pos, self.getTop(pos), ajdList):
+                    return [self.getBot(pos)]   
+                if not self.isLegalConnect(pos, self.getLeft(pos), ajdList):
+                    return [self.getRight(pos)]
+                if not self.isLegalConnect(pos, self.getRight(pos), ajdList):
+                    return [self.getLeft(pos)]  
+                return [self.getTop(pos), self.getLeft(pos)]
+                
             if self.nodes[pos] == Masyu.WHITE:
                 return [(2*pos[0] - ajdList[pos][0][0], 2*pos[1] - ajdList[pos][0][1])] if self.isLegalConnect(pos, (2*pos[0] - ajdList[pos][0][0], 2*pos[1] - ajdList[pos][0][1]), ajdList) else []
             else:
@@ -367,7 +406,7 @@ class Masyu:
                         tryMoves = (pos, legalMoves)
         # Try to find move from nodes
         for pos in self.nodes:
-            if len(ajdList[pos]) == 0:
+            if pos not in ajdList:
                 legalMoves = self.makeLegalConnectsFromConnectedPos(pos, ajdList)
                 if len(legalMoves) == 0:
                     return False
