@@ -132,6 +132,9 @@ class Masyu:
         if not self.isValidPos(connectPos):
             return False
 
+        if connectPos in ajdList and len(ajdList[connectPos]) > 1:
+            return False
+        
         if ajdList[pos][0] in self.nodes:
             # Line after black node must straight
             if self.nodes[ajdList[pos][0]] == Masyu.BLACK and not self.threePosStraight(ajdList[pos][0], pos, connectPos):
@@ -156,8 +159,6 @@ class Masyu:
                 return (2*connectPos[0]-pos[0], 2*connectPos[1]-pos[1]) not in self.nodes or self.nodes[(2*connectPos[0]-pos[0], 2*connectPos[1]-pos[1])] == Masyu.BLACK
             return connectPos[0] == 2*pos[0] - ajdList[pos][0][0] and connectPos[1] == 2*pos[1] - ajdList[pos][0][1]
 
-        if len(ajdList[connectPos]) > 1:
-            return False
         if self.checkLocalLoopFromConnect(pos, connectPos, ajdList):
             return False
         if connectPos not in self.nodes:
