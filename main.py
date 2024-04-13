@@ -34,8 +34,8 @@ def main():
         if int(option) == 2:
             start = timer()
             puzzel.solveWithWhat()
-            #with open("solution.txt", "a") as file:  
-            #    file.write("--- %s seconds ---" % (time.time() - start_time))
+            with open("solution.txt", "a") as file:  
+                file.write("--- %s seconds ---" % (timer() - start))
             print("--- %s seconds ---" % (timer() - start))
 
 if __name__ == "__main__":
