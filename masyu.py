@@ -49,6 +49,8 @@ class Masyu:
             print(".")
             
     def printStateToFile(self, ajdList: dict[tuple[int, int], list[tuple[int, int]]], fileName: str):
+        if self.size >= 15:
+            return
         with open(fileName, "a") as f:
             i = 0
             for i in range(self.size - 1):
@@ -141,7 +143,7 @@ class Masyu:
         return count < len(self.nodes)
 
     def check2StraightLinesAfterWhiteNodes(self, prePos: tuple[int, int], whitePos: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
-        if len(ajdList[whitePos]) < 2:
+        if whitePos not in ajdList or len(ajdList[whitePos]) == 1:
             return False
         midP = ajdList[whitePos][0] if not prePos or ajdList[whitePos][0] != prePos else ajdList[whitePos][1]
         if len(ajdList[midP]) == 1:
@@ -155,89 +157,62 @@ class Masyu:
 
         if connectPos in ajdList and len(ajdList[connectPos]) > 1:
             return False
-
-        if pos not in ajdList:
-        # And pos also is node
-            if connectPos not in ajdList: 
-                return True
-            if self.nodes[pos] == Masyu.WHITE:
-                if connectPos not in self.nodes:
-                    if ajdList[connectPos][0] not in self.nodes:
-                        return True
-                    if self.nodes[ajdList[connectPos][0]] == Masyu.BLACK:
-                        return self.threePosStraight(pos, connectPos, ajdList[connectPos][0])
-                    if not self.threePosStraight(pos, connectPos, ajdList[connectPos][0]):
-                        return True
-                    return not self.check2StraightLinesAfterWhiteNodes(connectPos, ajdList[connectPos][0], ajdList)
-                if self.nodes[connectPos] == Masyu.WHITE:
-                    if not self.threePosStraight(pos, connectPos, ajdList[connectPos][0]):
-                        return False 
-                    return not self.check2StraightLinesAfterWhiteNodes(None, connectPos, ajdList)
-                return not self.threePosStraight(pos, connectPos, ajdList[connectPos][0])
-            if not self.threePosStraight(pos, connectPos, ajdList[connectPos][0]):
-                return False
-            if ajdList[connectPos][0] not in self.nodes or self.nodes[ajdList[connectPos][0]] == Masyu.BLACK:
-                return True
-            return not self.check2StraightLinesAfterWhiteNodes(connectPos, ajdList[connectPos][0], ajdList)
-                
-        if ajdList[pos][0] in self.nodes:
-            # Line after black node must straight
+        
+        if pos in ajdList and ajdList[pos][0] in self.nodes:
+            # Turn after black node not allowed
             if self.nodes[ajdList[pos][0]] == Masyu.BLACK and not self.threePosStraight(ajdList[pos][0], pos, connectPos):
                 return False
-            # Line after white node with straight light before must turn
-            if self.nodes[ajdList[pos][0]] == Masyu.WHITE:
-                if len(ajdList[pos][0]) == 1 or len(ajdList[ajdList[pos][0]]) == 1:
-                    return True
-                # 3 pos before white node
-                pos1 = ajdList[pos][0]
-                midPos = ajdList[pos1][0] if ajdList[pos1][0] != pos else ajdList[pos1][1]
-                pos2 = ajdList[midPos][0] if ajdList[pos1][0] != pos1 else ajdList[midPos][1]
-                if self.threePosStraight(pos1,midPos,pos2) and self.threePosStraight(ajdList[pos][0], pos, connectPos):
-                    return False
-
+            # 2 straight lines before and after white node not allowed
+            if self.nodes[ajdList[pos][0]] == Masyu.WHITE and self.threePosStraight(connectPos, pos, ajdList[pos][0]) and self.check2StraightLinesAfterWhiteNodes(pos, ajdList[pos][0], ajdList):
+                return False
+        
         if connectPos not in ajdList:
             if connectPos not in self.nodes:
                 return True
             # Try to connect white node which current has no connections
             if self.nodes[connectPos] == Masyu.WHITE:
                 # Turn before reach white node
-                if not self.threePosStraight(ajdList[pos][0], pos, connectPos):
+                if pos not in ajdList or not self.threePosStraight(ajdList[pos][0], pos, connectPos):
                     return True
-                # Straight line before reach white node allowed only if no node after or black node after
+                # Straight line before reach white node allowed only if white node with no node after or black node after
                 return (2*connectPos[0]-pos[0], 2*connectPos[1]-pos[1]) not in self.nodes or self.nodes[(2*connectPos[0]-pos[0], 2*connectPos[1]-pos[1])] == Masyu.BLACK
             # Only straight line before black node allowed 
-            return self.threePosStraight(connectPos, pos, ajdList[pos][0])
-
-        if self.checkLocalLoopFromConnect(pos, connectPos, ajdList):
-            return False
+            return pos not in ajdList or self.threePosStraight(connectPos, pos, ajdList[pos][0])
+        
+        if pos in self.nodes:
+            if self.nodes[pos] == Masyu.WHITE and self.threePosStraight(pos, connectPos, ajdList[connectPos][0]) and self.check2StraightLinesAfterWhiteNodes(None, pos, ajdList):
+                return False
+            if self.nodes[pos] == Masyu.BLACK and not self.threePosStraight(pos, connectPos, ajdList[connectPos][0]):
+                return False
+        
+        if pos in ajdList and self.checkLocalLoopFromConnect(pos, connectPos, ajdList):
+            return False 
+        
         if connectPos not in self.nodes:
-            return True
+            if ajdList[connectPos][0] not in self.nodes:
+                return True
+            if self.nodes[ajdList[connectPos][0]] == Masyu.BLACK:
+                return self.threePosStraight(pos, connectPos, ajdList[connectPos][0])
+            if not self.threePosStraight(pos, connectPos, ajdList[connectPos][0]):
+                return True
+            return not self.check2StraightLinesAfterWhiteNodes(connectPos, ajdList[connectPos][0], ajdList)
         if self.nodes[connectPos] == Masyu.WHITE:
             # Make a turn at white node
             if not self.threePosStraight(pos, connectPos, ajdList[connectPos][0]):
                 return False
             # Turn at pos right before reach white node
-            if not self.threePosStraight(ajdList[pos][0], pos, connectPos):
+            if pos in ajdList and not self.threePosStraight(ajdList[pos][0], pos, connectPos):
                 return True
             # Straight line before reach white node with 1 line after
-            if len(ajdList[ajdList[connectPos][0]]) == 1:
-                return True
-            # Straight line before reach white node with 2 lines after
-            for p in ajdList[ajdList[connectPos][0]]:
-                if p != connectPos:
-                    # White node with 2 lines after without turn
-                    if self.threePosStraight(connectPos, ajdList[connectPos][0], p):
-                        return False
-                    # White node with turn right after
-                    return True
+            return not self.check2StraightLinesAfterWhiteNodes(None, connectPos, ajdList)
         # Straight line pass black node
         if self.threePosStraight(pos, connectPos, ajdList[connectPos][0]):
             return False
         # Straight line before black node and turn at black node
-        if self.threePosStraight(ajdList[pos][0], pos, connectPos):
+        if pos not in ajdList or self.threePosStraight(ajdList[pos][0], pos, connectPos):
             return True
         # Turn right before reach black node
-        return False
+        return False        
 
     def makeLegalConnectsFromConnectedPos(self, pos: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
         # Node connect to pos always has higher priority in connectPos 
@@ -440,3 +415,5 @@ class Masyu:
         with open("solution.txt", "a") as file:  
             file.write("2. Try\n\n")
         self.solve(ajdList)
+        
+        return ajdList
