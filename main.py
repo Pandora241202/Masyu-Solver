@@ -1,6 +1,7 @@
 from timeit import default_timer as timer
 import json
-from masyu import Masyu
+import masyu
+
 
 BLACK = 0
 WHITE = 1
@@ -19,7 +20,7 @@ def main():
         nodes = {}
         with open(sizeStr + "x" + sizeStr + "/" + i + ".txt", "r") as f:
             nodes = json.load(f, object_hook=tuple_hook)
-        puzzel = Masyu(int(sizeStr), nodes)
+        puzzel = masyu.Masyu(int(sizeStr), nodes)
         
         print("")
         print("Puzzel:")
@@ -31,20 +32,19 @@ def main():
         print("Depth-First Search: 1")
         print("Heuristic Search with Backtracking: 2")
         option = input()
+        solver = None
         if int(option) == 2:
-            print("Solution:")
-            start = timer()
-            puzzel.printState(puzzel.solveWithWhat())
-            with open("solution.txt", "a") as file:  
-                file.write("--- %s seconds ---" % (timer() - start))
-            print("--- %s seconds ---" % (timer() - start))
+            print("\nSolution using Heuristic Search with Backtracking:")
+            solver = masyu.MasyuHeuristicSolver(puzzel)
         if int(option) == 1:
-            print("Solution:")
-            start = timer()
-            puzzel.printState(puzzel.solveWithWhat())
-            with open("solution.txt", "a") as file:  
-                file.write("--- %s seconds ---" % (timer() - start))
-            print("--- %s seconds ---" % (timer() - start))
+            print("\nSolution using Depth-First Search:")
+            solver = masyu.MasyuDFSSolver(puzzel)
+            
+        start = timer()
+        puzzel.printState(solver.solve())
+        with open("solution.txt", "a") as file:  
+            file.write("--- %s seconds ---" % (timer() - start))
+        print("--- %s seconds ---" % (timer() - start))
 
 if __name__ == "__main__":
     main()

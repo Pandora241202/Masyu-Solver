@@ -1,3 +1,5 @@
+import copy
+
 class Masyu:
     WHITE = 1
     BLACK = 0
@@ -97,6 +99,8 @@ class Masyu:
             f.write("\n")
 
     def isValidPos(self, pos: tuple[int, int]):
+        if not pos: 
+            return False
         return pos[0] >= 0 and pos[0] < self.size and pos[1] >= 0 and pos[1] < self.size
 
     def threePosStraight(self, pos1: tuple[int, int], midPos: tuple[int, int], pos2: tuple[int, int]):
@@ -214,11 +218,9 @@ class Masyu:
         # Turn right before reach black node
         return False        
 
-    def makeLegalConnectsFromConnectedPos(self, pos: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
-        # Node connect to pos always has higher priority in connectPos 
+    def makeLegalConnectsFromPos(self, pos: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
         connectPos = []        
         if pos in self.nodes:
-            # Nodes with no connect at the moment
             if pos not in ajdList:
                 if self.nodes[pos] == Masyu.WHITE:
                     # White node can't make connection to 2 ajadent directions
@@ -257,82 +259,26 @@ class Masyu:
                     if self.isLegalConnect(pos, (pos[0], pos[1]+1), ajdList):
                         connectPos = [(pos[0], pos[1]+1)] + connectPos if (pos[0], pos[1]+1) in self.nodes else connectPos + [(pos[0], pos[1]+1)]
         else:
-            if (pos[0], pos[1]-1) != ajdList[pos][0] and self.isLegalConnect(pos, (pos[0], pos[1]-1), ajdList):
-                connectPos = [(pos[0], pos[1]-1)] + connectPos if (pos[0], pos[1]-1) in self.nodes else connectPos + [(pos[0], pos[1]-1)]
-            if (pos[0], pos[1]+1) != ajdList[pos][0] and self.isLegalConnect(pos, (pos[0], pos[1]+1), ajdList):
-                connectPos = [(pos[0], pos[1]+1)] + connectPos if (pos[0], pos[1]+1) in self.nodes else connectPos + [(pos[0], pos[1]+1)]
-            if (pos[0]-1, pos[1]) != ajdList[pos][0] and self.isLegalConnect(pos, (pos[0]-1, pos[1]), ajdList):
-                connectPos = [(pos[0]-1, pos[1])] + connectPos if (pos[0]-1, pos[1]) in self.nodes else connectPos + [(pos[0]-1, pos[1])]
-            if (pos[0]+1, pos[1]) != ajdList[pos][0] and self.isLegalConnect(pos, (pos[0]+1, pos[1]), ajdList):
-                connectPos = [(pos[0]+1, pos[1])] + connectPos if (pos[0]+1, pos[1]) in self.nodes else connectPos + [(pos[0]+1, pos[1])]
+            if pos in ajdList:
+                if self.getLeft(pos) != ajdList[pos][0] and self.isLegalConnect(pos, self.getLeft(pos), ajdList):
+                    connectPos = [self.getLeft(pos)] + connectPos if self.getLeft(pos) in self.nodes else connectPos + [self.getLeft(pos)]
+                if self.getRight(pos) != ajdList[pos][0] and self.isLegalConnect(pos, self.getRight(pos), ajdList):
+                    connectPos = [self.getRight(pos)] + connectPos if self.getRight(pos) in self.nodes else connectPos + [self.getRight(pos)]
+                if self.getTop(pos) != ajdList[pos][0] and self.isLegalConnect(pos, self.getTop(pos), ajdList):
+                    connectPos = [self.getTop(pos)] + connectPos if self.getTop(pos) in self.nodes else connectPos + [self.getTop(pos)]
+                if self.getBot(pos) != ajdList[pos][0] and self.isLegalConnect(pos, self.getBot(pos), ajdList):
+                    connectPos = [self.getBot(pos)] + connectPos if self.getBot(pos) in self.nodes else connectPos + [self.getBot(pos)]
+            else:
+                if self.isLegalConnect(pos, self.getLeft(pos), ajdList):
+                    connectPos = [self.getLeft(pos)] + connectPos if self.getLeft(pos) in self.nodes else connectPos + [self.getLeft(pos)]
+                if self.isLegalConnect(pos, self.getRight(pos), ajdList):
+                    connectPos = [self.getRight(pos)] + connectPos if self.getRight(pos) in self.nodes else connectPos + [self.getRight(pos)]
+                if self.isLegalConnect(pos, self.getTop(pos), ajdList):
+                    connectPos = [self.getTop(pos)] + connectPos if self.getTop(pos) in self.nodes else connectPos + [self.getTop(pos)]
+                if self.isLegalConnect(pos, self.getBot(pos), ajdList):
+                    connectPos = [self.getBot(pos)] + connectPos if self.getBot(pos) in self.nodes else connectPos + [self.getBot(pos)]
 
         return connectPos
-
-    def preprocessing(self, ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
-        for pos in self.nodes:
-            # For white nodes
-            if self.nodes[pos] == Masyu.WHITE:
-                # White node at edge
-                # Vertical
-                if pos[1] == 0 or pos[1] == self.size - 1:
-                    self.connect2Pos(pos, (pos[0]-1, pos[1]), ajdList)
-                    self.connect2Pos(pos, (pos[0]+1, pos[1]), ajdList)
-                # Horizontal
-                if pos[0] == 0 or pos[0] == self.size - 1:
-                    self.connect2Pos(pos, (pos[0], pos[1]-1), ajdList)
-                    self.connect2Pos(pos, (pos[0], pos[1]+1), ajdList)
-
-                # >=3 white node next to each other
-                # Horizontal
-                countContinuWhiteNodes = 1
-                while pos[1] + countContinuWhiteNodes < self.size:
-                    if (pos[0], pos[1] + countContinuWhiteNodes) not in self.nodes or self.nodes[(pos[0], pos[1] + countContinuWhiteNodes)] == Masyu.BLACK:
-                        break
-                    countContinuWhiteNodes += 1
-                if countContinuWhiteNodes >= 3:
-                    for i in range(countContinuWhiteNodes):
-                        self.connect2Pos((pos[0], pos[1]+i), (pos[0]-1, pos[1]+i), ajdList)
-                        self.connect2Pos((pos[0], pos[1]+i), (pos[0]+1, pos[1]+i), ajdList)
-                # Vertical
-                countContinuWhiteNodes = 1
-                while pos[0] + countContinuWhiteNodes < self.size:
-                    if (pos[0] + countContinuWhiteNodes, pos[1]) not in self.nodes or self.nodes[(pos[0] + countContinuWhiteNodes, pos[1])] == Masyu.BLACK:
-                        break
-                    countContinuWhiteNodes += 1
-                if countContinuWhiteNodes >= 3:
-                    for i in range(countContinuWhiteNodes):
-                        self.connect2Pos((pos[0]+i, pos[1]), (pos[0]+i, pos[1]-1), ajdList)
-                        self.connect2Pos((pos[0]+i, pos[1]), (pos[0]+i, pos[1]+1), ajdList)
-
-            # For black nodes
-            else:
-                # Black node at edge or distance to edge = 1
-                # Horizontal
-                if pos[1] == 0 or pos[1] == self.size - 1 or pos[1] == 1 or pos[1] == self.size - 2:
-                    connectPos = (pos[0], pos[1]+1 if pos[1] == 0 or pos[1] == 1 else pos[1]-1)
-                    self.connect2Pos(pos, connectPos, ajdList)
-                    self.connect2Pos(connectPos, (connectPos[0], connectPos[1]+1 if pos[1] == 0 or pos[1] == 1 else connectPos[1]-1), ajdList)
-                # Vertical
-                if pos[0] == 0 or pos[0] == self.size - 1 or pos[0] == 1 or pos[0] == self.size - 2:
-                    connectPos = (pos[0] + 1 if pos[0] == 0 or pos[0] == 1 else pos[0]-1, pos[1])
-                    self.connect2Pos(pos, connectPos, ajdList)
-                    self.connect2Pos(connectPos, (connectPos[0] + 1 if pos[0] == 0 or pos[0] == 1 else connectPos[0]-1, connectPos[1]), ajdList)
-
-                # 2 black nodes next to each other
-                # Horizontal
-                if (pos[0], pos[1]+1) in self.nodes and self.nodes[(pos[0], pos[1]+1)] == Masyu.BLACK:
-                    self.connect2Pos(pos, (pos[0], pos[1]-1), ajdList)
-                    self.connect2Pos((pos[0], pos[1]-1), (pos[0], pos[1]-2), ajdList)
-                    self.connect2Pos((pos[0], pos[1]+1), (pos[0], pos[1]+2), ajdList)
-                    self.connect2Pos((pos[0], pos[1]+2), (pos[0], pos[1]+3), ajdList)
-                # Vertical
-                if (pos[0]+1, pos[1]) in self.nodes and self.nodes[(pos[0]+1, pos[1])] == Masyu.BLACK:
-                    self.connect2Pos(pos, (pos[0]-1, pos[1]), ajdList)
-                    self.connect2Pos((pos[0]-1, pos[1]), (pos[0]-2, pos[1]), ajdList)
-                    self.connect2Pos((pos[0]+1, pos[1]), (pos[0]+2, pos[1]), ajdList)
-                    self.connect2Pos((pos[0]+2, pos[1]), (pos[0]+3, pos[1]), ajdList)
-
-        self.printStateToFile(ajdList, "solution.txt")
 
     def isGoal(self, ajdList:dict[tuple[int, int], list[tuple[int,int]]]):
         if len(ajdList) < len(self.nodes): return False
@@ -359,61 +305,214 @@ class Masyu:
 
         return count == len(self.nodes)
 
-    def solve(self, ajdList:dict[tuple[int, int], list[tuple[int,int]]]):
 
-        self.printStateToFile(ajdList, "solution.txt")
+class MasyuHeuristicSolver:
+    def  __init__(self, puzzel: Masyu):
+        self.puzzel = puzzel
+        self.ajdList: dict[tuple[int, int], list[tuple[int,int]]] = {}
+       
+    def preprocessing(self):
+        for pos in self.puzzel.nodes:
+            # For white nodes
+            if self.puzzel.nodes[pos] == Masyu.WHITE:
+                # White node at edge
+                # Vertical
+                if pos[1] == 0 or pos[1] == self.puzzel.size - 1:
+                    self.puzzel.connect2Pos(pos, (pos[0]-1, pos[1]), self.ajdList)
+                    self.puzzel.connect2Pos(pos, (pos[0]+1, pos[1]), self.ajdList)
+                # Horizontal
+                if pos[0] == 0 or pos[0] == self.puzzel.size - 1:
+                    self.puzzel.connect2Pos(pos, (pos[0], pos[1]-1), self.ajdList)
+                    self.puzzel.connect2Pos(pos, (pos[0], pos[1]+1), self.ajdList)
 
-        if self.isGoal(ajdList):
+                # >=3 white node next to each other
+                # Horizontal
+                countContinuWhiteNodes = 1
+                while pos[1] + countContinuWhiteNodes < self.puzzel.size:
+                    if (pos[0], pos[1] + countContinuWhiteNodes) not in self.puzzel.nodes or self.puzzel.nodes[(pos[0], pos[1] + countContinuWhiteNodes)] == Masyu.BLACK:
+                        break
+                    countContinuWhiteNodes += 1
+                if countContinuWhiteNodes >= 3:
+                    for i in range(countContinuWhiteNodes):
+                        self.puzzel.connect2Pos((pos[0], pos[1]+i), (pos[0]-1, pos[1]+i), self.ajdList)
+                        self.puzzel.connect2Pos((pos[0], pos[1]+i), (pos[0]+1, pos[1]+i), self.ajdList)
+                # Vertical
+                countContinuWhiteNodes = 1
+                while pos[0] + countContinuWhiteNodes < self.puzzel.size:
+                    if (pos[0] + countContinuWhiteNodes, pos[1]) not in self.puzzel.nodes or self.puzzel.nodes[(pos[0] + countContinuWhiteNodes, pos[1])] == Masyu.BLACK:
+                        break
+                    countContinuWhiteNodes += 1
+                if countContinuWhiteNodes >= 3:
+                    for i in range(countContinuWhiteNodes):
+                        self.puzzel.connect2Pos((pos[0]+i, pos[1]), (pos[0]+i, pos[1]-1), self.ajdList)
+                        self.puzzel.connect2Pos((pos[0]+i, pos[1]), (pos[0]+i, pos[1]+1), self.ajdList)
+
+            # For black nodes
+            else:
+                # Black node at edge or distance to edge = 1
+                # Horizontal
+                if pos[1] == 0 or pos[1] == self.puzzel.size - 1 or pos[1] == 1 or pos[1] == self.puzzel.size - 2:
+                    connectPos = (pos[0], pos[1]+1 if pos[1] == 0 or pos[1] == 1 else pos[1]-1)
+                    self.puzzel.connect2Pos(pos, connectPos, self.ajdList)
+                    self.puzzel.connect2Pos(connectPos, (connectPos[0], connectPos[1]+1 if pos[1] == 0 or pos[1] == 1 else connectPos[1]-1), self.ajdList)
+                # Vertical
+                if pos[0] == 0 or pos[0] == self.puzzel.size - 1 or pos[0] == 1 or pos[0] == self.puzzel.size - 2:
+                    connectPos = (pos[0] + 1 if pos[0] == 0 or pos[0] == 1 else pos[0]-1, pos[1])
+                    self.puzzel.connect2Pos(pos, connectPos, self.ajdList)
+                    self.puzzel.connect2Pos(connectPos, (connectPos[0] + 1 if pos[0] == 0 or pos[0] == 1 else connectPos[0]-1, connectPos[1]), self.ajdList)
+
+                # 2 black nodes next to each other
+                # Horizontal
+                if (pos[0], pos[1]+1) in self.puzzel.nodes and self.puzzel.nodes[(pos[0], pos[1]+1)] == Masyu.BLACK:
+                    self.puzzel.connect2Pos(pos, (pos[0], pos[1]-1), self.ajdList)
+                    self.puzzel.connect2Pos((pos[0], pos[1]-1), (pos[0], pos[1]-2), self.ajdList)
+                    self.puzzel.connect2Pos((pos[0], pos[1]+1), (pos[0], pos[1]+2), self.ajdList)
+                    self.puzzel.connect2Pos((pos[0], pos[1]+2), (pos[0], pos[1]+3), self.ajdList)
+                # Vertical
+                if (pos[0]+1, pos[1]) in self.puzzel.nodes and self.puzzel.nodes[(pos[0]+1, pos[1])] == Masyu.BLACK:
+                    self.puzzel.connect2Pos(pos, (pos[0]-1, pos[1]), self.ajdList)
+                    self.puzzel.connect2Pos((pos[0]-1, pos[1]), (pos[0]-2, pos[1]), self.ajdList)
+                    self.puzzel.connect2Pos((pos[0]+1, pos[1]), (pos[0]+2, pos[1]), self.ajdList)
+                    self.puzzel.connect2Pos((pos[0]+2, pos[1]), (pos[0]+3, pos[1]), self.ajdList)
+
+        self.puzzel.printStateToFile(self.ajdList, "solution.txt")
+
+    def backtrackWithHeuristic(self):
+
+        self.puzzel.printStateToFile(self.ajdList, "solution.txt")
+
+        if self.puzzel.isGoal(self.ajdList):
             return True
 
         tryMoves = None
         # Try to continue lines in current state
-        for pos in ajdList:
-            if len(ajdList[pos]) == 1:
-                legalMoves = self.makeLegalConnectsFromConnectedPos(pos, ajdList)
+        for pos in self.ajdList:
+            if len(self.ajdList[pos]) == 1:
+                legalMoves = self.puzzel.makeLegalConnectsFromPos(pos, self.ajdList)
                 if len(legalMoves) == 0:
                     return False
                 # Find pos with least options to be chosen
                 if not tryMoves:
                     tryMoves = (pos, legalMoves)
                 else:
-                    if (len(legalMoves) < len(tryMoves[1])) or (len(legalMoves) == len(tryMoves[1]) and tryMoves[1][0] in self.nodes):
+                    if (len(legalMoves) < len(tryMoves[1])) or (len(legalMoves) == len(tryMoves[1]) and tryMoves[1][0] in self.puzzel.nodes):
                         tryMoves = (pos, legalMoves)
         # Try to find move from nodes
-        for pos in self.nodes:
-            if pos not in ajdList:
-                legalMoves = self.makeLegalConnectsFromConnectedPos(pos, ajdList)
+        for pos in self.puzzel.nodes:
+            if pos not in self.ajdList:
+                legalMoves = self.puzzel.makeLegalConnectsFromPos(pos, self.ajdList)
                 if len(legalMoves) == 0:
                     return False
                 # Find pos with least options to be chosen
                 if not tryMoves:
                     tryMoves = (pos, legalMoves)
                 else:
-                    if (len(legalMoves) < len(tryMoves[1])) or (len(legalMoves) == len(tryMoves[1]) and tryMoves[1][0] in self.nodes):
+                    if (len(legalMoves) < len(tryMoves[1])) or (len(legalMoves) == len(tryMoves[1]) and tryMoves[1][0] in self.puzzel.nodes):
                         tryMoves = (pos, legalMoves)
 
         for pos in tryMoves[1]:
-            self.connect2Pos(tryMoves[0], pos, ajdList)
-            if self.solve(ajdList):
+            self.puzzel.connect2Pos(tryMoves[0], pos, self.ajdList)
+            if self.backtrackWithHeuristic():
                 return True
-            self.delConnect2Pos(tryMoves[0], pos, ajdList)
-            self.printStateToFile(ajdList, "solution.txt")
+            self.puzzel.delConnect2Pos(tryMoves[0], pos, self.ajdList)
+            self.puzzel.printStateToFile(self.ajdList, "solution.txt")
 
         return False
 
-    def solveWithWhat(self):
-        ajdList: dict[tuple[int, int], list[tuple[int,int]]] = {}
-
+    def solve(self):
         with open("solution.txt", "w") as file:
             file.write("Puzzel:\n\n")
-        self.printStateToFile({}, "solution.txt")
+        self.puzzel.printStateToFile(self.ajdList, "solution.txt")
 
         with open("solution.txt", "a") as file:  
-            file.write("1. Preprocess\n\n")
-        self.preprocessing(ajdList)
+            file.write("1. Preprocessing\n\n")
+        self.preprocessing()
 
         with open("solution.txt", "a") as file:  
-            file.write("2. Try\n\n")
-        self.solve(ajdList)
+            file.write("2. Start solving with backtracking\n\n")
+        self.backtrackWithHeuristic()
         
-        return ajdList
+        return self.ajdList
+    
+    
+class MasyuDFSSolver:
+    def  __init__(self, puzzel: Masyu):
+        self.puzzel = puzzel
+        self.ajdList: dict[tuple[int, int], list[tuple[int,int]]] = {}
+       
+    def isEqual(self, ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
+        if len(ajdList) != len(self.ajdList):
+            return False
+        for pos in self.ajdList:
+            if pos not in ajdList or len(self.ajdList[pos]) != len(ajdList[pos]):
+                return False
+            for ajdPos in self.ajdList[pos]:
+                if ajdPos not in ajdList[pos]:
+                    return False
+        return True
+
+    def dfs(self, visited=None):
+        
+        if self.puzzel.isGoal(self.ajdList):
+            return True
+
+        if visited is None:
+            visited = []
+        visited += [copy.deepcopy(self.ajdList)]
+        self.puzzel.printStateToFile(self.ajdList, "solution.txt")
+
+        tryMoves = []
+        for i in range(self.puzzel.size):
+            for j in range(self.puzzel.size):
+                if (i,j) in self.ajdList and len(self.ajdList[(i,j)]) > 1:
+                    continue
+                legalMoves = self.puzzel.makeLegalConnectsFromPos((i,j), self.ajdList)
+                if ((i,j) in self.ajdList or (i,j) in self.puzzel.nodes) and len(legalMoves) == 0:
+                    return False
+                if (i,j) in self.ajdList or (i,j) in self.puzzel.nodes:
+                    tryMoves += [((i,j), legalMoves)]    
+                else:
+                    tryMoves += [((i,j), tryPos) for tryPos in legalMoves]
+        #print(tryMoves)
+        for move in tryMoves:   
+            if type(move[1]) is not list:
+                self.puzzel.connect2Pos(move[0], move[1], self.ajdList)
+                isVisited = False
+                for state in visited:
+                    if self.isEqual(state):
+                        self.puzzel.delConnect2Pos(move[0], move[1], self.ajdList)
+                        isVisited = True
+                        break
+                if not isVisited:
+                    if self.dfs(visited):
+                        return True
+                    self.puzzel.delConnect2Pos(move[0], move[1], self.ajdList)
+                    self.puzzel.printStateToFile(self.ajdList, "solution.txt")
+            else:
+                for pos in move[1]:
+                    self.puzzel.connect2Pos(move[0], pos, self.ajdList)
+                    isVisited = False
+                    for i in range(len(visited)):
+                        if self.isEqual(visited[i]):
+                            self.puzzel.delConnect2Pos(move[0], pos, self.ajdList)
+                            isVisited = True
+                            break
+                    if not isVisited:
+                        if self.dfs(visited):
+                            return True
+                        self.puzzel.delConnect2Pos(move[0], pos, self.ajdList)
+                        self.puzzel.printStateToFile(self.ajdList, "solution.txt")
+                return False
+
+        return False
+
+    def solve(self):
+        with open("solution.txt", "w") as file:
+            file.write("Puzzel:\n\n")
+        self.puzzel.printStateToFile(self.ajdList, "solution.txt")
+
+        with open("solution.txt", "a") as file:  
+            file.write("Searching with DFS\n\n")
+        self.dfs()
+        
+        return self.ajdList
