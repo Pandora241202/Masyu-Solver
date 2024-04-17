@@ -352,7 +352,25 @@ class MasyuHeuristicSolver:
                     for i in range(countContinuWhiteNodes):
                         self.puzzel.connect2Pos((pos[0]+i, pos[1]), (pos[0]+i, pos[1]-1), self.ajdList)
                         self.puzzel.connect2Pos((pos[0]+i, pos[1]), (pos[0]+i, pos[1]+1), self.ajdList)
-
+                
+                # White black white angle
+                # 2 white horizontal
+                if (pos[0], pos[1]+2) in self.puzzel.nodes and self.puzzel.nodes[(pos[0], pos[1]+2)] == Masyu.WHITE:
+                    if (pos[0]+1, pos[1]+1) in self.puzzel.nodes and self.puzzel.nodes[(pos[0]+1, pos[1]+1)] == Masyu.BLACK:
+                        self.puzzel.connect2Pos((pos[0]+1, pos[1]+1), (pos[0]+2, pos[1]+1), self.ajdList)
+                        self.puzzel.connect2Pos((pos[0]+2, pos[1]+1), (pos[0]+3, pos[1]+1), self.ajdList)
+                    if (pos[0]-1, pos[1]+1) in self.puzzel.nodes and self.puzzel.nodes[(pos[0]-1, pos[1]+1)] == Masyu.BLACK:
+                        self.puzzel.connect2Pos((pos[0]-1, pos[1]+1), (pos[0]-2, pos[1]+1), self.ajdList)
+                        self.puzzel.connect2Pos((pos[0]-2, pos[1]+1), (pos[0]-3, pos[1]+1), self.ajdList)
+                # 2 white vertical
+                if (pos[0]+2, pos[1]) in self.puzzel.nodes and self.puzzel.nodes[(pos[0]+2, pos[1])] == Masyu.WHITE:
+                    if (pos[0]+1, pos[1]+1) in self.puzzel.nodes and self.puzzel.nodes[(pos[0]+1, pos[1]+1)] == Masyu.BLACK:
+                        self.puzzel.connect2Pos((pos[0]+1, pos[1]+1), (pos[0]+1, pos[1]+2), self.ajdList)
+                        self.puzzel.connect2Pos((pos[0]+1, pos[1]+2), (pos[0]+1, pos[1]+3), self.ajdList)
+                    if (pos[0]+1, pos[1]-1) in self.puzzel.nodes and self.puzzel.nodes[(pos[0]+1, pos[1]-1)] == Masyu.BLACK:
+                        self.puzzel.connect2Pos((pos[0]+1, pos[1]-1), (pos[0]+1, pos[1]-2), self.ajdList)
+                        self.puzzel.connect2Pos((pos[0]+1, pos[1]-2), (pos[0]+1, pos[1]-3), self.ajdList)
+                
             # For black nodes
             else:
                 # Black node at edge or distance to edge = 1
