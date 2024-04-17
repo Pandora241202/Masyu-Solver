@@ -156,19 +156,25 @@ class Masyu:
         return self.threePosStraight(whitePos, midP, p2)
         
     def isLegalConnect(self, pos: tuple[int, int], connectPos: tuple[int, int], ajdList: dict[tuple[int, int], list[tuple[int,int]]]):
+        # pos is guaranteed to be valid
         if not self.isValidPos(connectPos):
             return False
 
+        # pos is guaranteed to have less than 2 connections
         if connectPos in ajdList and len(ajdList[connectPos]) > 1:
             return False
         
         if pos in ajdList and ajdList[pos][0] in self.nodes:
-            # Turn after black node not allowed
+            # Turn before or after black node not allowed
             if self.nodes[ajdList[pos][0]] == Masyu.BLACK and not self.threePosStraight(ajdList[pos][0], pos, connectPos):
                 return False
-            # 2 straight lines before and after white node not allowed
-            if self.nodes[ajdList[pos][0]] == Masyu.WHITE and self.threePosStraight(connectPos, pos, ajdList[pos][0]) and self.check2StraightLinesAfterWhiteNodes(pos, ajdList[pos][0], ajdList):
-                return False
+            if self.nodes[ajdList[pos][0]] == Masyu.WHITE and self.threePosStraight(connectPos, pos, ajdList[pos][0]):
+                # 2 straight lines before and after white node not allowed
+                if self.check2StraightLinesAfterWhiteNodes(pos, ajdList[pos][0], ajdList):
+                    return False
+                # 2 straight lines after 2 white nodes not allowed
+                if (2*ajdList[pos][0][0]-pos[0], 2*ajdList[pos][0][1]-pos[1]) in self.nodes and self.nodes[(2*ajdList[pos][0][0]-pos[0], 2*ajdList[pos][0][1]-pos[1])] == Masyu.WHITE:
+                    return False
         
         if connectPos not in ajdList:
             if connectPos not in self.nodes:
@@ -473,7 +479,6 @@ class MasyuDFSSolver:
                     tryMoves += [((i,j), legalMoves)]    
                 else:
                     tryMoves += [((i,j), tryPos) for tryPos in legalMoves]
-        #print(tryMoves)
         for move in tryMoves:   
             if type(move[1]) is not list:
                 self.puzzel.connect2Pos(move[0], move[1], self.ajdList)
