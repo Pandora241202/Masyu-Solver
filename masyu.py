@@ -16,7 +16,7 @@ class Masyu:
                 if (i, j) in self.nodes:
                     print("O" if self.nodes[(i,j)] == Masyu.WHITE else "@", end="")
                 else:
-                    print(".", end="")
+                    print("•", end="")
                 if (i, j) in ajdList and (i, j+1) in ajdList[(i, j)]:
                     print("----", end="")
                 else:
@@ -25,7 +25,7 @@ class Masyu:
             if (i, j) in self.nodes:
                 print("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
             else:
-                print(".")
+                print("•")
             j = 0
             for j in range(self.size):
                 if (i, j) in ajdList and (i+1, j) in ajdList[(i, j)]:
@@ -39,7 +39,7 @@ class Masyu:
             if (i, j) in self.nodes:
                 print("O" if self.nodes[(i,j)] == Masyu.WHITE else "@", end="")
             else:
-                print(".", end="")
+                print("•", end="")
             if (i, j) in ajdList and (i, j+1) in ajdList[(i, j)]:
                 print("----", end="")
             else:
@@ -48,7 +48,7 @@ class Masyu:
         if (i, j) in self.nodes:
             print("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
         else:
-            print(".")
+            print("•")
             
     def printStateToFile(self, ajdList: dict[tuple[int, int], list[tuple[int, int]]], fileName: str):
         if self.size >= 15:
@@ -61,7 +61,7 @@ class Masyu:
                     if (i, j) in self.nodes:
                         f.write("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
                     else:
-                        f.write(".")
+                        f.write("•")
                     if (i, j) in ajdList and (i, j+1) in ajdList[(i, j)]:
                         f.write("----")
                     else:
@@ -85,7 +85,7 @@ class Masyu:
                 if (i, j) in self.nodes:
                     f.write("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
                 else:
-                    f.write(".")
+                    f.write("•")
                 if (i, j) in ajdList and (i, j+1) in ajdList[(i, j)]:
                     f.write("----")
                 else:
