@@ -53,7 +53,7 @@ class Masyu:
     def printStateToFile(self, ajdList: dict[tuple[int, int], list[tuple[int, int]]], fileName: str):
         if self.size >= 15:
             return
-        with open(fileName, "a") as f:
+        with open(fileName, "a", encoding='utf-8') as f:
             i = 0
             for i in range(self.size - 1):
                 j = 0
@@ -71,7 +71,7 @@ class Masyu:
                     f.write("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
                     f.write("\n")
                 else:
-                    f.write(".\n")
+                    f.write("•\n")
                 j = 0
                 for j in range(self.size):
                     if (i, j) in ajdList and (i+1, j) in ajdList[(i, j)]:
@@ -95,8 +95,8 @@ class Masyu:
                 f.write("O" if self.nodes[(i,j)] == Masyu.WHITE else "@")
                 f.write("\n")
             else:
-                f.write(".\n")
-            f.write("\n")
+                f.write("•\n")
+            f.write("\n\n")
 
     def isValidPos(self, pos: tuple[int, int]):
         if not pos: 
