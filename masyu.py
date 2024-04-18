@@ -477,13 +477,14 @@ class MasyuDFSSolver:
 
     def dfs(self, visited=None):
         
+        self.puzzel.printStateToFile(self.ajdList, "solution.txt")
+        
         if self.puzzel.isGoal(self.ajdList):
             return True
 
         if visited is None:
             visited = []
         visited += [copy.deepcopy(self.ajdList)]
-        self.puzzel.printStateToFile(self.ajdList, "solution.txt")
 
         tryMoves = []
         for i in range(self.puzzel.size):
