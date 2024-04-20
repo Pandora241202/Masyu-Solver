@@ -1,7 +1,7 @@
 from timeit import default_timer as timer
 import json
 import masyu
-
+import tracemalloc
 
 BLACK = 0
 WHITE = 1
@@ -41,7 +41,10 @@ def main():
             solver = masyu.MasyuDFSSolver(puzzel)
             
         start = timer()
+        tracemalloc.start()
         puzzel.printState(solver.solve())
+        print("--- %s B ---" % tracemalloc.get_traced_memory()[1])
+        tracemalloc.stop()
         with open("solution.txt", "a") as file:  
             file.write("--- %s seconds ---" % (timer() - start))
         print("--- %s seconds ---" % (timer() - start))
